@@ -4,7 +4,7 @@ import { Friend, FriendService } from '../friend.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../notification.service';
 
 @Component({
@@ -50,28 +50,7 @@ import { NotificationService } from '../notification.service';
 export class FriendListComponent {
   private friends: Signal<Friend[]>;
 
-  sortedFriends = computed(() =>
-    [...this.friends()].sort((a, b) => {
-      if (a.birthYear != null && b.birthYear != null) {
-        // Both have birthYear, so sort by year first
-        if (a.birthYear !== b.birthYear) {
-          return a.birthYear - b.birthYear;
-        }
-      } else if (a.birthYear == null && b.birthYear != null) {
-        // Move `a` (without birthYear) to the end
-        return 1;
-      } else if (a.birthYear != null && b.birthYear == null) {
-        // Move `b` (without birthYear) to the end
-        return -1;
-      }
-
-      // If both have the same birthYear, or both are missing birthYear, compare month and day
-      if (a.birthMonth !== b.birthMonth) {
-        return a.birthMonth - b.birthMonth;
-      }
-      return a.birthDay - b.birthDay;
-    })
-  );
+  sortedFriends = computed(() => [...this.friends()].sort(sortByBirthday1));
 
   constructor(
     private friendService: FriendService,
@@ -139,4 +118,59 @@ export class FriendListComponent {
       'Close'
     );
   }
+}
+
+function sortByBirthday1(a: any, b: any) {
+  const getDateComponents = (obj: any) => {
+    return {
+      month: parseInt(obj.birthMonth),
+      day: parseInt(obj.birthDay),
+      year: obj.birthYear ? parseInt(obj.birthYear) : Infinity, // Use Infinity for missing years
+    };
+  };
+
+  const aDate = getDateComponents(a);
+  const bDate = getDateComponents(b);
+
+  // Compare months first
+  if (aDate.month !== bDate.month) {
+    return aDate.month - bDate.month;
+  }
+
+  // If months are equal, compare days
+  if (aDate.day !== bDate.day) {
+    return aDate.day - bDate.day;
+  }
+
+  // If both month and day are equal, compare years
+  // Entries without a year will be considered as having the highest year (Infinity)
+  return aDate.year - bDate.year;
+}
+
+function sortByBirthday(a: any, b: any) {
+  const getDateComponents = (obj: any) => {
+    return {
+      year: obj.birthYear ? parseInt(obj.birthYear) : null,
+      month: parseInt(obj.birthMonth),
+      day: parseInt(obj.birthDay),
+    };
+  };
+
+  const aDate = getDateComponents(a);
+  const bDate = getDateComponents(b);
+
+  // Compare years first
+  if (aDate.year !== bDate.year) {
+    if (aDate.year === null) return 1; // a comes after b
+    if (bDate.year === null) return -1; // b comes after a
+    return aDate.year - bDate.year; // Sort by year
+  }
+
+  // If years are equal or both are null, compare months
+  if (aDate.month !== bDate.month) {
+    return aDate.month - bDate.month; // Sort by month
+  }
+
+  // If months are equal, compare days
+  return aDate.day - bDate.day; // Sort by day
 }

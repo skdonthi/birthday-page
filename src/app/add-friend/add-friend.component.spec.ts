@@ -50,30 +50,109 @@ describe('AddFriendComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize the form with empty fields', () => {
-    expect(component.friendForm.get('firstName')?.value).toBe('');
-    expect(component.friendForm.get('birthday')?.value).toBe('');
+  it('should initialize with empty form', () => {
+    expect(component.friendForm.get('birthDay')?.value).toBe('');
+    expect(component.friendForm.get('birthMonth')?.value).toBe('');
+    expect(component.friendForm.get('birthYear')?.value).toBe('');
   });
 
-  it('should call addFriend method when form is valid and submitted', () => {
-    const testDate = new Date(1990, 0, 1); // January 1, 1990
+  it('should validate day input', () => {
+    const dayControl = component.friendForm.get('birthDay');
+
+    dayControl?.setValue('');
+    expect(dayControl?.hasError('required')).toBeTruthy();
+
+    dayControl?.setValue('0');
+    expect(dayControl?.hasError('invalidFormat')).toBeTruthy();
+
+    dayControl?.setValue('32');
+    expect(dayControl?.hasError('outOfRange')).toBeTruthy();
+
+    dayControl?.setValue('15');
+    expect(dayControl?.valid).toBeTruthy();
+  });
+
+  it('should validate month input', () => {
+    const monthControl = component.friendForm.get('birthMonth');
+
+    monthControl?.setValue('');
+    expect(monthControl?.hasError('required')).toBeTruthy();
+
+    monthControl?.setValue('0');
+    expect(monthControl?.hasError('invalidFormat')).toBeTruthy();
+
+    monthControl?.setValue('13');
+    expect(monthControl?.hasError('outOfRange')).toBeTruthy();
+
+    monthControl?.setValue('06');
+    expect(monthControl?.valid).toBeTruthy();
+  });
+
+  it('should validate year input', () => {
+    const yearControl = component.friendForm.get('birthYear');
+    const currentYear = new Date().getFullYear();
+
+    yearControl?.setValue('');
+    expect(yearControl?.hasError('required')).toBeTruthy();
+
+    yearControl?.setValue('199');
+    expect(yearControl?.hasError('invalidFormat')).toBeTruthy();
+
+    yearControl?.setValue('1899');
+    expect(yearControl?.hasError('outOfRange')).toBeTruthy();
+
+    yearControl?.setValue((currentYear + 1).toString());
+    expect(yearControl?.hasError('outOfRange')).toBeTruthy();
+
+    yearControl?.setValue('2000');
+    expect(yearControl?.valid).toBeTruthy();
+  });
+
+  it('should format input correctly', () => {
+    const event = { target: { value: '123' } } as any;
+    const result = component.formatInput(event, 2);
+    expect(result).toBe('12');
+  });
+
+  it('should disable submit button when form is invalid', () => {
     component.friendForm.setValue({
-      firstName: 'John',
-      birthday: testDate,
+      firstName: '',
+      birthDay: '',
+      birthMonth: '',
+      birthYear: '',
     });
-
-    component.onSubmit();
-
-    expect(friendService.addFriend).toHaveBeenCalledWith({
-      firstName: 'John',
-      birthDay: 1,
-      birthMonth: 1,
-      birthYear: 1990,
-    });
+    fixture.detectChanges();
+    const submitButton = fixture.nativeElement.querySelector(
+      'button[type="submit"]'
+    );
+    expect(submitButton.disabled).toBeTruthy();
   });
 
-  it('should not call addFriend method when form is invalid', () => {
-    component.onSubmit();
-    expect(friendService.addFriend).not.toHaveBeenCalled();
+  it('should enable submit button when form is valid', () => {
+    component.friendForm.setValue({
+      firstName: 'angular',
+      birthDay: '15',
+      birthMonth: '06',
+      birthYear: '2000',
+    });
+    fixture.detectChanges();
+    const submitButton = fixture.nativeElement.querySelector(
+      'button[type="submit"]'
+    );
+    expect(submitButton.disabled).toBeFalsy();
+  });
+
+  it('should call onSubmit when form is submitted', () => {
+    spyOn(component, 'onSubmit');
+    component.friendForm.setValue({
+      firstName: 'angular',
+      birthDay: '15',
+      birthMonth: '06',
+      birthYear: '2000',
+    });
+    fixture.detectChanges();
+    const form = fixture.nativeElement.querySelector('form');
+    ///form.dispatchEvent(new Event('submit'));
+    expect(component.onSubmit).toHaveBeenCalled();
   });
 });

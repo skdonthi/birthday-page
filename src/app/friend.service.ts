@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 
 export interface Friend {
-  id: number;
+  id?: number;
   firstName: string;
   birthDay: number;
   birthMonth: number;
